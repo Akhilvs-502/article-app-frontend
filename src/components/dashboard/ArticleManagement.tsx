@@ -16,7 +16,7 @@ interface Article {
   isLiked: boolean;
   isDisliked: boolean;
   isBlocked: boolean;
-  status: 'published' | 'draft' | 'pending';
+  status: 'published';
 }
 
 interface ArticleManagementProps {
@@ -37,7 +37,7 @@ export default function ArticleManagement({
   onDelete 
 }: ArticleManagementProps) {
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
-  const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft' | 'pending'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'published'>('all');
 
   const openArticle = (article: Article) => {
     setSelectedArticle(article);
@@ -51,10 +51,6 @@ export default function ArticleManagement({
     switch (status) {
       case 'published':
         return 'bg-green-100 text-green-800';
-      case 'draft':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'pending':
-        return 'bg-blue-100 text-blue-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -64,19 +60,14 @@ export default function ArticleManagement({
     switch (status) {
       case 'published':
         return 'Published';
-      case 'draft':
-        return 'Draft';
-      case 'pending':
-        return 'Pending Review';
       default:
         return 'Unknown';
     }
   };
 
-  const filteredArticles = articles.filter(article => {
-    if (filterStatus === 'all') return !article.isBlocked;
-    return !article.isBlocked && article.status === filterStatus;
-  });
+  const filteredArticles = articles
+    .filter(article => !article.isBlocked)
+    .filter(article => filterStatus === 'all' ? true : article.status === 'published');
 
   return (
     <div>
@@ -88,9 +79,9 @@ export default function ArticleManagement({
         </Link>
       </div>
 
-      {/* Filter Tabs */}
+      {/* Filter Tabs (only All and Published) */}
       <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg mb-6">
-        {(['all', 'published', 'draft', 'pending'] as const).map((status) => (
+        {(['all', 'published'] as const).map((status) => (
           <button
             key={status}
             onClick={() => setFilterStatus(status)}
@@ -100,7 +91,7 @@ export default function ArticleManagement({
                 : 'text-gray-600 hover:text-gray-900'
             }`}
           >
-            {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
+            {status === 'all' ? 'All' : 'Published'}
           </button>
         ))}
       </div>

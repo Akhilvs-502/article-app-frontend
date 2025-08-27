@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ArticleManagement from '@/components/dashboard/ArticleManagement';
 
@@ -55,7 +56,7 @@ const mockArticles = [
     isLiked: false,
     isDisliked: false,
     isBlocked: false,
-    status: 'draft' as const
+    status: 'published' as const
   },
   {
     id: 4,
@@ -85,11 +86,12 @@ const mockArticles = [
     isLiked: false,
     isDisliked: false,
     isBlocked: false,
-    status: 'pending' as const
+    status: 'published' as const
   }
 ];
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'articles' | 'preferences'>('articles');
   const [selectedArticle, setSelectedArticle] = useState<typeof mockArticles[0] | null>(null);
   const [articles, setArticles] = useState(mockArticles);
@@ -142,10 +144,7 @@ export default function DashboardPage() {
   };
 
   const handleEdit = (articleId: number) => {
-    // In a real app, this would navigate to an edit page
-    console.log('Edit article:', articleId);
-    // For now, just show an alert
-    alert('Edit functionality would navigate to article edit page');
+    router.push(`/dashboard/edit-article/${articleId}`);
   };
 
   const handleDelete = (articleId: number) => {
@@ -166,26 +165,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900">Article Hub</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/dashboard/create-article" className="text-sm text-blue-600 hover:text-blue-700 font-medium">
-                Create Article
-              </Link>
-              <Link href="/settings" className="text-sm text-gray-600 hover:text-gray-700">
-                Settings
-              </Link>
-              <span className="text-sm text-gray-700">Welcome, {mockUser.name}</span>
-              <button className="text-sm text-red-600 hover:text-red-700">Logout</button>
-            </div>
-          </div>
-        </div>
-      </header>
+      
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Dashboard Content */}

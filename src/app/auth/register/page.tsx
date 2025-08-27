@@ -2,6 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { userRegister } from '@/services/authService';
+import { verifyOtpService } from '@/services/verifyOtpService';
+import { toast } from 'react-toastify';
+import { toastError, toastLite } from '@/utils/toast';
+import { useRouter } from 'next/navigation';
+
 
 const articleCategories = [
   'Sports',
@@ -31,7 +37,8 @@ export default function RegisterPage() {
     preferences: [] as string[]
   });
 
-  const [otp, setOtp] = useState(['', '', '', '']);
+  const router=useRouter()
+  const [otp, setOtp] = useState(['', '', '', '','','']);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,8 +89,8 @@ export default function RegisterPage() {
 
   const validateOtpStep = () => {
     const otpString = otp.join('');
-    if (otpString.length !== 4) {
-      setErrors({ otp: 'Please enter the complete 4-digit OTP' });
+    if (otpString.length !== 6) {
+      setErrors({ otp: 'Please enter the complete 6-digit OTP' });
       return false;
     }
     setErrors({});
@@ -99,13 +106,40 @@ export default function RegisterPage() {
     return true;
   };
 
-  const handleNextStep = () => {
+  const handleNextStep =async () => {
     if (currentStep === 'basic' && validateBasicStep()) {
-      console.log('Sending OTP to:', formData.phone);
+
+    try{
+      const data=await userRegister(formData)
       setCurrentStep('otp');
+      
+    }catch(error){
+        toastLite(error.response.data.message)
+      
+    }
+
+      console.log('Sending OTP to:', formData.phone);
     } else if (currentStep === 'otp' && validateOtpStep()) {
       console.log('Verifying OTP:', otp.join(''));
-      setCurrentStep('preferences');
+   
+      try{
+
+        const verifyOtp=await verifyOtpService({email:formData.email,otp})
+
+      
+        toastLite("otp verified success")
+        
+        setCurrentStep('preferences');
+
+      }catch(error){
+      
+      
+        console.log("erro3",error.response.data.message);
+        toastLite(error.response.data.message)
+
+        
+      }
+
     }
   };
 
@@ -121,7 +155,8 @@ export default function RegisterPage() {
     e.preventDefault();
     if (validatePreferencesStep()) {
       console.log('Final form submitted:', formData);
-      alert('Registration successful! Welcome to Article Hub!');
+      toastLite('Registration successful! Welcome to Article Hub!');
+      router.push("/auth/login")
     }
   };
 
@@ -355,7 +390,7 @@ export default function RegisterPage() {
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Verify Your Phone</h2>
         <p className="text-gray-600">
           We've sent a 4-digit verification code to{' '}
-          <span className="font-semibold text-gray-900">{formData.phone}</span>
+          <span className="font-semibold text-gray-900">{formData.email}</span>
         </p>
       </div>
 

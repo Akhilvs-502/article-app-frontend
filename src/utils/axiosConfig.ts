@@ -1,7 +1,7 @@
 import axios, { InternalAxiosRequestConfig } from "axios"
 import { toastError } from "./toast"
-import { logOut } from "@/features/auth/userAuthSlice"
-import { store } from "@/store/store"
+// import { logOut } from "@/features/auth/userAuthSlice"
+// import { store } from "@/store/store"
 
 
 
@@ -23,7 +23,7 @@ console.log(error);
         if(error.response && error.response.status===401){
             console.log(error.response);
             
-            store.dispatch(logOut())
+            // store.dispatch(logOut())
             toastError(error.response.message || "Unauthorized access Login to continue")
             setTimeout(()=>{
                 window.location.href="/login"

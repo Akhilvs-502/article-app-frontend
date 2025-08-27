@@ -1,4 +1,4 @@
-// src/constants/routes.ts
+// src/constants/routes.tsv
 // Centralized route constants for API endpoints
 
 export const API_ROUTES = {
@@ -8,6 +8,9 @@ export const API_ROUTES = {
     LOGIN: "/api/user/login",
     REGISTER: "/api/user/register",
     LOGOUT: "/api/user/logout",
+    RESEND_OTP: "/api/user/resendOtp",
+    VERIFY_OTP: "/api/user/verifyOtp",
+
 
 }
 }

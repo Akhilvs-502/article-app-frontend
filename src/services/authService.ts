@@ -10,7 +10,7 @@ export const userLogin = async (body: object) => {
     console.log(response, "updated login");
     return response;
   } catch (error) {
-    console.log(error, "Errrrrrr");
+
     throw error;
   }
 };

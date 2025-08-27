@@ -25,6 +25,28 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Ensure form controls are readable in both themes */
+input, textarea, select {
+  background-color: #ffffff;
+  color: #111827; /* gray-900 */
+}
+
+input::placeholder, textarea::placeholder {
+  color: #9ca3af; /* gray-400 */
+}
+
+@media (prefers-color-scheme: dark) {
+  input, textarea, select {
+    background-color: #111827; /* gray-900 */
+    color: #e5e7eb; /* gray-200 */
+    border-color: #374151; /* gray-700 */
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: #6b7280; /* gray-500 */
+  }
+}
+
 @layer utilities {
   .line-clamp-2 {
     display: -webkit-box;

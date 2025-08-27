@@ -2,6 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { userLogin } from '@/services/authService';
+import { toastError, toastLite } from '@/utils/toast';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -9,6 +12,9 @@ export default function LoginPage() {
     password: ''
   });
 
+    const router=useRouter()
+  
+  
   const [identifierType, setIdentifierType] = useState<'email' | 'phone'>('email');
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -46,10 +52,22 @@ export default function LoginPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
-      // Handle form submission here
+      try {
+        const userData = await userLogin(formData)
+
+        toastLite("login page success")
+      router.push("/home")
+
+      } catch (error) {
+        console.log(error,"error while login page");
+
+        
+        toastError(error.response.data.message)
+      }
+
       console.log('Login attempt:', { ...formData, identifierType });
       // You would typically send this data to your backend API
     }
@@ -69,22 +87,20 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => handleIdentifierTypeChange('email')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
-                identifierType === 'email'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${identifierType === 'email'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+                }`}
             >
               Email
             </button>
             <button
               type="button"
               onClick={() => handleIdentifierTypeChange('phone')}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${
-                identifierType === 'phone'
-                  ? 'bg-white text-blue-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors duration-200 ${identifierType === 'phone'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-600 hover:text-gray-900'
+                }`}
             >
               Phone
             </button>
@@ -101,9 +117,8 @@ export default function LoginPage() {
               name="identifier"
               value={formData.identifier}
               onChange={handleInputChange}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.identifier ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.identifier ? 'border-red-500' : 'border-gray-300'
+                }`}
               placeholder={`Enter your ${identifierType === 'email' ? 'email address' : 'phone number'}`}
             />
             {errors.identifier && <p className="text-red-500 text-sm mt-1">{errors.identifier}</p>}
@@ -120,9 +135,8 @@ export default function LoginPage() {
               name="password"
               value={formData.password}
               onChange={handleInputChange}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                errors.password ? 'border-red-500' : 'border-gray-300'
-              }`}
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.password ? 'border-red-500' : 'border-gray-300'
+                }`}
               placeholder="Enter your password"
             />
             {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
