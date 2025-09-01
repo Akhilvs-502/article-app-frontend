@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect } from 'react';
 import ArticleCard from '@/components/ArticleCard';
 import ArticleModal from '@/components/ArticleModal';
 import { Article } from '@/types/article';
-import { mockArticles } from '@/data/mockArticles';
 import { getUserFeedsService, articleActionService } from '@/services/dashboard';
 
 const categories = ['All', 'Technology', 'Science', 'Health', 'Sports', 'Space', 'Environment'];
@@ -64,14 +63,11 @@ export default function HomePage() {
             isDisliked: item.isDisliked || false
           }));
           setArticles(normalizedArticles);
-        } else {
-          // Fallback to mock data if no API data
-          setArticles(mockArticles);
-        }
+        } 
       } catch (error) {
         console.error("Failed to fetch articles:", error);
         // Fallback to mock data on error
-        setArticles(mockArticles);
+    
       }
     };
 

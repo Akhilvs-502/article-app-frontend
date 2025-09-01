@@ -304,7 +304,7 @@ export default function ProfileSettings() {
           </div>
           <div>
             <span className="font-medium">Last updated:</span> {new Date(user.updatedAt).toLocaleDateString()}
-          </div>
+          </div>  
         </div>
       </div>
     </div>
