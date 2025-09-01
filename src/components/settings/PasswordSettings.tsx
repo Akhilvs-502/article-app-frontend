@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { ChangePasswordData } from '@/types/user';
+import { userResetPassword } from '@/services/ProfileService';
+import { toastError, toastLite } from '@/utils/toast';
 
 export default function PasswordSettings() {
   const [formData, setFormData] = useState<ChangePasswordData>({
@@ -75,13 +77,22 @@ export default function PasswordSettings() {
     if (!validateForm()) {
       return;
     }
+    try{
 
-    setIsLoading(true);
-    setMessage(null);
+    }catch(error){
+      console.log(error.data);
+      setIsLoading(true);
+      setMessage(null);
+      
+      toastError(error.response.data.message)
+
+    }
+
 
     try {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const response=await userResetPassword(formData)
+
       
       // Reset form
       setFormData({
@@ -92,10 +103,8 @@ export default function PasswordSettings() {
       
       setMessage({ type: 'success', text: 'Password changed successfully!' });
       
-      // Clear message after 5 seconds
-      setTimeout(() => setMessage(null), 5000);
     } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to change password. Please try again.' });
+      setMessage({ type: 'error', text: error.response.data.message });
     } finally {
       setIsLoading(false);
     }

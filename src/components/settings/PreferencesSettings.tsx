@@ -1,81 +1,101 @@
 'use client';
 
-import { useState } from 'react';
-import { mockUserPreferences, availableCategories, availableLanguages } from '@/data/mockUser';
-import { UserPreferences } from '@/types/user';
+import { useState, useEffect } from 'react';
+import { getUserProfile } from '@/services/ProfileService';
+import CategoryPreferenceCard from '@/components/CategoryPreferenceCard';
+import { updateUserPreference } from '@/services/preferenceService';
 
 export default function PreferencesSettings() {
-  const [preferences, setPreferences] = useState<UserPreferences>(mockUserPreferences);
-  const [isLoading, setIsLoading] = useState(false);
+  const [userCategories, setUserCategories] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const handleCategoryChange = (category: string) => {
-    setPreferences(prev => ({
-      ...prev,
-      categories: prev.categories.includes(category)
-        ? prev.categories.filter(c => c !== category)
-        : [...prev.categories, category]
-    }));
-  };
+  // Load user profile to get categories
+  useEffect(() => {
+    loadUserProfile();
+  }, []);
 
-  const handleSortByChange = (sortBy: 'date' | 'likes' | 'title') => {
-    setPreferences(prev => ({ ...prev, sortBy }));
-  };
-
-  const handleToggleChange = (key: keyof UserPreferences) => {
-    setPreferences(prev => ({
-      ...prev,
-      [key]: !prev[key]
-    }));
-  };
-
-  const handleThemeChange = (theme: 'light' | 'dark' | 'system') => {
-    setPreferences(prev => ({ ...prev, theme }));
-  };
-
-  const handleLanguageChange = (language: string) => {
-    setPreferences(prev => ({ ...prev, language }));
-  };
-
-  const handleSave = async () => {
-    setIsLoading(true);
-    setMessage(null);
-
+  const loadUserProfile = async () => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      setIsLoading(true);
+      const response = await getUserProfile();
+      const userData = response?.data?.user;
       
-      setMessage({ type: 'success', text: 'Preferences updated successfully!' });
+      console.log("prefernce data",userData);
       
-      // Clear message after 3 seconds
-      setTimeout(() => setMessage(null), 3000);
+      // Extract categories from user profile
+      const categories = userData?.preferences || userData?.categories || [];
+      setUserCategories(categories);
+      setSelectedCategories(categories); // Initialize selected categories
+      
     } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to update preferences. Please try again.' });
+      console.error('Failed to load user profile:', error);
+      setMessage({ type: 'error', text: 'Failed to load preferences. Please try again.' });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleCategoryToggle = (category: string, isSelected: boolean) => {
+    setSelectedCategories(prev => 
+      isSelected 
+        ? [...prev, category]
+        : prev.filter(c => c !== category)
+    );
+  };
+
+  const handleSavePreferences = async () => {
+    setIsSaving(true);
+    setMessage(null);
+
+    try {
+      // TODO: Replace with your actual API call to save preferences
+      // const response = await updateUserPreferences(selectedCategories);
+      
+      // Mock API call for now
+          
+      setUserCategories(selectedCategories);
+    
+
+      const response=await updateUserPreference(selectedCategories)
+
+      setMessage({ type: 'success', text: 'Preferences updated successfully!' });
+      
+      // Clear message after 3 seconds
+      setTimeout(() => setMessage(null), 3000);
+    } catch (error) {
+      console.error('Failed to save preferences:', error);
+      setMessage({ type: 'error', text: 'Failed to update preferences. Please try again.' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Available categories - you can get these from your backend or keep them static
+  const availableCategories = [
+    'Sports', 'Politics', 'Space', 'Technology', 'Health', 'Science', 
+    'Entertainment', 'Business', 'Education', 'Environment'
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-3 text-gray-600">Loading preferences...</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-medium text-gray-900">Article Preferences</h3>
-          <p className="text-sm text-gray-600">
-            Customize your reading experience and content preferences
-          </p>
-        </div>
-        <button
-          onClick={handleSave}
-          disabled={isLoading}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-2"
-        >
-          {isLoading && (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-          )}
-          <span>{isLoading ? 'Saving...' : 'Save Preferences'}</span>
-        </button>
+      <div>
+        <h3 className="text-lg font-medium text-gray-900">Category Preferences</h3>
+        <p className="text-sm text-gray-600 mt-1">
+          Select the categories you're interested in. Articles from these topics will appear in your feed.
+        </p>
       </div>
 
       {/* Message */}
@@ -89,166 +109,55 @@ export default function PreferencesSettings() {
         </div>
       )}
 
-      {/* Content Preferences */}
-      <div className="space-y-6">
-        <div>
-          <h4 className="text-md font-medium text-gray-900 mb-4">Content Preferences</h4>
-          
-          {/* Categories */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Preferred Categories
-            </label>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {availableCategories.map((category) => (
-                <label key={category} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={preferences.categories.includes(category)}
-                    onChange={() => handleCategoryChange(category)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">{category}</span>
-                </label>
-              ))}
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Select categories you're most interested in. Articles from these categories will be prioritized.
-            </p>
-          </div>
-
-          {/* Sort Preference */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Default Sort Order
-            </label>
-            <select
-              value={preferences.sortBy}
-              onChange={(e) => handleSortByChange(e.target.value as 'date' | 'likes' | 'title')}
-              className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="date">Latest First</option>
-              <option value="likes">Most Popular</option>
-              <option value="title">Alphabetical</option>
-            </select>
-          </div>
-
-          {/* Content Filtering */}
-          <div className="mb-6">
-            <label className="flex items-center space-x-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={preferences.showBlockedContent}
-                onChange={() => handleToggleChange('showBlockedContent')}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+      {/* Categories */}
+      <div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {availableCategories.map((category) => (
+                          <CategoryPreferenceCard
+                key={category}
+                category={category}
+                userCategories={selectedCategories}
+                onToggle={handleCategoryToggle}
               />
-              <span className="text-sm font-medium text-gray-700">Show blocked content</span>
-            </label>
-            <p className="text-xs text-gray-500 mt-1 ml-6">
-              Display articles you've previously blocked (useful for reconsidering content)
-            </p>
-          </div>
+          ))}
         </div>
-
-        {/* Notification Preferences */}
-        <div>
-          <h4 className="text-md font-medium text-gray-900 mb-4">Notification Preferences</h4>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={preferences.emailNotifications}
-                  onChange={() => handleToggleChange('emailNotifications')}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm font-medium text-gray-700">Email notifications</span>
-              </label>
-              <p className="text-xs text-gray-500 mt-1 ml-6">
-                Receive updates about new articles and important changes via email
-              </p>
-            </div>
-
-            <div>
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={preferences.pushNotifications}
-                  onChange={() => handleToggleChange('pushNotifications')}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm font-medium text-gray-700">Push notifications</span>
-              </label>
-              <p className="text-xs text-gray-500 mt-1 ml-6">
-                Get real-time notifications in your browser for new content
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* App Settings */}
-        <div>
-          <h4 className="text-md font-medium text-gray-900 mb-4">App Settings</h4>
-          
-          {/* Theme */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Theme
-            </label>
-            <div className="flex space-x-4">
-              {(['light', 'dark', 'system'] as const).map((theme) => (
-                <label key={theme} className="flex items-center space-x-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="theme"
-                    value={theme}
-                    checked={preferences.theme === theme}
-                    onChange={() => handleThemeChange(theme)}
-                    className="border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700 capitalize">{theme}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* Language */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Language
-            </label>
-            <select
-              value={preferences.language}
-              onChange={(e) => handleLanguageChange(e.target.value)}
-              className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              {availableLanguages.map((lang) => (
-                <option key={lang.code} value={lang.code}>
-                  {lang.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+        <p className="text-xs text-gray-500 mt-4">
+          Select your preferred categories and click Save to update your preferences.
+        </p>
       </div>
 
-      {/* Summary */}
+      {/* Current Selection Summary */}
       <div className="pt-6 border-t border-gray-200">
-        <h4 className="text-sm font-medium text-gray-900 mb-3">Current Preferences Summary</h4>
-        <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm text-gray-600">
-          <div>
-            <span className="font-medium">Categories:</span> {preferences.categories.join(', ') || 'None selected'}
-          </div>
-          <div>
-            <span className="font-medium">Sort by:</span> {preferences.sortBy === 'date' ? 'Latest First' : preferences.sortBy === 'likes' ? 'Most Popular' : 'Alphabetical'}
-          </div>
-          <div>
-            <span className="font-medium">Theme:</span> {preferences.theme.charAt(0).toUpperCase() + preferences.theme.slice(1)}
-          </div>
-          <div>
-            <span className="font-medium">Language:</span> {availableLanguages.find(l => l.code === preferences.language)?.name}
-          </div>
+        <h4 className="text-sm font-medium text-gray-900 mb-3">Selected Categories</h4>
+        <div className="bg-gray-50 rounded-lg p-4">
+          {selectedCategories.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {selectedCategories.map((category) => (
+                <span 
+                  key={category}
+                  className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium"
+                >
+                  {category}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 text-sm">No categories selected yet.</p>
+          )}
+        </div>
+        
+        {/* Save Button */}
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={handleSavePreferences}
+            disabled={isSaving}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center space-x-2 font-medium"
+          >
+            {isSaving && (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            )}
+            <span>{isSaving ? 'Saving...' : 'Save Preferences'}</span>
+          </button>
         </div>
       </div>
     </div>

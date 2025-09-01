@@ -1,22 +1,19 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { mockUser } from '@/data/mockUser';
+import { useState, useRef, useEffect } from 'react';
+
 import { UpdateProfileData } from '@/types/user';
+import { getUserProfile, userProfileDataUpdate } from '@/services/ProfileService';
+import { toastError } from '@/utils/toast';
 
 export default function ProfileSettings() {
-  const [user, setUser] = useState(mockUser);
+  const [user, setUser] = useState({});
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [formData, setFormData] = useState<UpdateProfileData>({
-    firstName: user.firstName,
-    lastName: user.lastName,
-    username: user.username,
-    bio: user.bio || ''
-  });
+  const [formData, setFormData] = useState<UpdateProfileData>({});
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -43,6 +40,18 @@ export default function ProfileSettings() {
   };
 
   const handleSave = async () => {
+
+    try{
+  const data=   await userProfileDataUpdate(formData)
+  console.log(data);
+  
+
+    }catch(error){
+      toastError("error saving data try again after sometime")
+      console.log(error);
+      
+    }
+
     setIsLoading(true);
     setMessage(null);
 
@@ -79,6 +88,25 @@ export default function ProfileSettings() {
     setIsEditing(false);
     setMessage(null);
   };
+
+
+  useEffect(()=>{
+
+    try{
+      const run=async()=>{
+        const response=await getUserProfile()
+        console.log(response.data);
+        setUser(response.data.user)
+        setFormData(response.data.user)
+
+      }
+      run()
+
+    }catch(Error){
+      
+    }
+
+  },[])
 
   return (
     <div className="space-y-6">
