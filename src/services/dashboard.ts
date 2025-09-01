@@ -5,7 +5,7 @@ import axios from "../utils/axiosConfig"
 import { toastError } from "@/utils/toast"
 
 
-export const createArticleService = async (body: Object) => {
+export const createArticleService = async (body: object) => {
     try {
 
         const response = await axios.post(API_ROUTES.USER.CREATE_ARTICLE, body, { withCredentials: true })
@@ -16,7 +16,7 @@ export const createArticleService = async (body: Object) => {
     }
 }
 
-export const editArticleService = async (id: string | number, body: Object) => {
+export const editArticleService = async (id: string | number, body: object) => {
     try {
         const response = await axios.patch(`${API_ROUTES.USER.UPDATE_ARTICLE}/${id}`, body, { withCredentials: true })
         return response

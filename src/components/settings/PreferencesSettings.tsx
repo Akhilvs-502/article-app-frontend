@@ -94,7 +94,7 @@ export default function PreferencesSettings() {
       <div>
         <h3 className="text-lg font-medium text-gray-900">Category Preferences</h3>
         <p className="text-sm text-gray-600 mt-1">
-          Select the categories you're interested in. Articles from these topics will appear in your feed.
+          Select the categories you&apos;re interested in. Articles from these topics will appear in your feed.
         </p>
       </div>
 

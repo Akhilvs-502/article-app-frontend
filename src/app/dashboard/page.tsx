@@ -1,10 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+
 import ArticleManagement from '@/components/dashboard/ArticleManagement';
-import { mockArticles as baseArticles } from '@/data/mockArticles';
 import { getUserArticleService, editArticleService } from '@/services/dashboard';
 import { useArticles, DashboardArticle } from '@/context/ArticlesContext';
 import EditArticleForm, { EditArticleData } from '@/components/EditArticleForm';
@@ -15,7 +13,7 @@ import { toastError } from '@/utils/toast';
 
 export default function DashboardPage() {
 
-  const router = useRouter();
+
 
   const [selectedArticle, setSelectedArticle] = useState<DashboardArticle | null>(null);
   const [editingArticle, setEditingArticle] = useState<DashboardArticle | null>(null);
@@ -26,23 +24,26 @@ export default function DashboardPage() {
     try{
       const getData = async () => {
         const response = await getUserArticleService();
-        const apiData = (response as any)?.data?.data ?? [];
-        const normalized: DashboardArticle[] = apiData.map((item: any) => ({
-          id: (item?.id ?? item?._id) as string | number,
-          title: item?.title ?? '',
-          category: item?.category ?? 'General',
-          author: item?.author ?? 'Unknown',
-          date: item?.date ?? new Date().toISOString(),
-          image: item?.image ?? 'https://via.placeholder.com/800x400',
-          isOwner: Boolean(item?.isOwner ?? true),
-          content: item?.content ?? '',
-          description: item?.description ?? (item?.content ? String(item?.content).slice(0, 180) : ''),
-          likes: Number(item?.likes ?? 0),
-          dislikes: Number(item?.dislikes ?? 0),
-          isLiked: Boolean(item?.isLiked ?? false),
-          isDisliked: Boolean(item?.isDisliked ?? false),
-          isBlocked: Boolean(item?.isBlocked ?? false)
-        }));
+        const apiData = (response as { data: { data: unknown[] } })?.data?.data ?? [];
+        const normalized: DashboardArticle[] = apiData.map((item: unknown) => {
+          const typedItem = item as { id?: string | number; _id?: string | number; title?: string; category?: string; author?: string; date?: string; content?: string; imageUrl?: string };
+          return {
+          id: (typedItem?.id ?? typedItem?._id) as string | number,
+          title: typedItem?.title ?? '',
+          category: typedItem?.category ?? 'General',
+          author: typedItem?.author ?? 'Unknown',
+          date: typedItem?.date ?? new Date().toISOString(),
+          image: typedItem?.imageUrl ?? 'https://via.placeholder.com/800x400',
+          isOwner: Boolean(true),
+          content: typedItem?.content ?? '',
+          description: typedItem?.content ? String(typedItem?.content).slice(0, 180) : '',
+          likes: Number(0),
+          dislikes: Number(0),
+          isLiked: Boolean(false),
+          isDisliked: Boolean(false),
+          isBlocked: Boolean(false)
+          };
+        });
         setArticles(normalized);
       };
       getData().catch((error) => {

@@ -7,13 +7,18 @@ import { getUserProfile, userProfileDataUpdate } from '@/services/ProfileService
 import { toastError } from '@/utils/toast';
 
 export default function ProfileSettings() {
-  const [user, setUser] = useState({});
+  const [user, setUser] = useState<{ firstName?: string; lastName?: string; username?: string; bio?: string; avatar?: string; email?: string; createdAt?: string; updatedAt?: string }>({});
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [formData, setFormData] = useState<UpdateProfileData>({});
+  const [formData, setFormData] = useState<UpdateProfileData>({
+    firstName: '',
+    lastName: '',
+    username: '',
+    bio: ''
+  });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -80,9 +85,9 @@ export default function ProfileSettings() {
 
   const handleCancel = () => {
     setFormData({
-      firstName: user.firstName,
-      lastName: user.lastName,
-      username: user.username,
+      firstName: user.firstName || '',
+      lastName: user.lastName || '',
+      username: user.username || '',
       bio: user.bio || ''
     });
     setIsEditing(false);
@@ -295,7 +300,7 @@ export default function ProfileSettings() {
         <h4 className="text-sm font-medium text-gray-900 mb-3">Account Information</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
           <div>
-            <span className="font-medium">Member since:</span> {new Date(user.createdAt).toLocaleDateString()}
+            <span className="font-medium">Member since:</span> {new Date(user?.createdAt).toLocaleDateString()}
           </div>
           <div>
             <span className="font-medium">Last updated:</span> {new Date(user.updatedAt).toLocaleDateString()}

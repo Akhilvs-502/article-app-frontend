@@ -73,7 +73,7 @@ export default function ArticleManagement({
             </svg>
             <h3 className="mt-2 text-sm font-medium text-gray-900">No articles found</h3>
             <p className="mt-1 text-sm text-gray-500">
-              You haven't created any articles yet.
+              You haven&apos;t created any articles yet.
             </p>
             <div className="mt-6">
               <Link href="/dashboard/create-article" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
@@ -85,10 +85,10 @@ export default function ArticleManagement({
           filteredArticles.map((article) => (
             <ArticleCard
               key={article.id}
-              article={article as any}
+              article={article}
               onLike={onLike}
               onDislike={onDislike}
-              onReadMore={openArticle as any}
+              onReadMore={openArticle}
               onEdit={onEdit}
               onDelete={onDelete}
               showManageActions

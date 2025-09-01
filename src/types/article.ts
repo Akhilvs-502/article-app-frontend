@@ -1,5 +1,5 @@
 export interface Article {
-  id: number;
+  id: string | number;
   _id?: string; // MongoDB-style ID from API
   title: string;
   category: string;
@@ -11,6 +11,8 @@ export interface Article {
   dislikes: number;
   isLiked: boolean;
   isDisliked: boolean;
+  isOwner: boolean;
+  isBlocked: boolean;
 }
 
 export interface CreateArticleData {

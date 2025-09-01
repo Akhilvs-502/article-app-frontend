@@ -23,14 +23,14 @@ export default function ArticlePage() {
         
         if (apiData && apiData.length > 0) {
           // Normalize the API data to match Article interface
-          const normalizedArticles = apiData.map((item: any) => ({
+          const normalizedArticles = apiData.map((item: { _id?: string; id?: string; title?: string; content?: string; description?: string; category?: string; author?: string; createdAt?: string; imageUrl?: string; image?: string; likes?: number; dislikes?: number; isLiked?: boolean; isDisliked?: boolean }) => ({
             id: item._id || item.id,
             _id: item._id,
             title: item.title || '',
             category: item.category || 'General',
             author: item.author || 'Unknown',
-            date: item.date || item.createdAt || new Date().toISOString(),
-            image: item.image || 'https://via.placeholder.com/800x400',
+            date: item.createdAt || new Date().toISOString(),
+            image: item.image || item.imageUrl || 'https://via.placeholder.com/800x400',
             content: item.content || item.description || '',
             likes: item.likes || 0,
             dislikes: item.dislikes || 0,
@@ -39,7 +39,7 @@ export default function ArticlePage() {
           }));
 
           const articleId = params.id as string;
-          const foundArticle = normalizedArticles.find(a => a._id === articleId || a.id === articleId);
+          const foundArticle = normalizedArticles.find((a: { _id?: string; id?: string | number }) => a._id === articleId || a.id === articleId);
           
           if (foundArticle) {
             setArticle(foundArticle);
@@ -93,7 +93,7 @@ export default function ArticlePage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Article Not Found</h2>
-          <p className="text-gray-600 mb-6">The article you're looking for doesn't exist.</p>
+          <p className="text-gray-600 mb-6">The article you&apos;re looking for doesn&apos;t exist.</p>
           <Link 
             href="/home"
             className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"

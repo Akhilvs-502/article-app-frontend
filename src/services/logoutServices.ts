@@ -9,7 +9,6 @@ import axios from "../utils/axiosConfig"
 
 export const userLogOutService=async()=>{
     try{
-        const url="api/user/logout"
         const response= await axios.post(API_ROUTES.USER.LOGOUT,{},{withCredentials:true}) 
         return response
     }

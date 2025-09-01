@@ -18,7 +18,7 @@ export default function HomePage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const filteredAndSortedArticles = useMemo(() => {
-    let filtered = articles.filter(article => {
+    const filtered = articles.filter(article => {
       const matchesSearch = article.title.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesCategory = selectedCategory === 'All' || article.category === selectedCategory;
       return matchesSearch && matchesCategory;
@@ -49,14 +49,14 @@ export default function HomePage() {
         
         if (apiData && apiData.length > 0) {
           // Normalize the API data to match Article interface
-          const normalizedArticles = apiData.map((item: any) => ({
+          const normalizedArticles = apiData.map((item: { _id?: string; id?: string; title?: string; content?: string; description?: string; category?: string; author?: string; createdAt?: string; imageUrl?: string; image?: string; likes?: number; dislikes?: number; isLiked?: boolean; isDisliked?: boolean }) => ({
             id: item._id || item.id,
             _id: item._id, // Keep the original _id for API calls
             title: item.title || '',
             category: item.category || 'General',
             author: item.author || 'Unknown',
-            date: item.date || item.createdAt || new Date().toISOString(),
-            image: item.image || 'https://via.placeholder.com/800x400',
+            date: item.createdAt || new Date().toISOString(),
+            image: item.image || item.imageUrl || 'https://via.placeholder.com/800x400',
             content: item.content || item.description || '',
             likes: item.likes || 0,
             dislikes: item.dislikes || 0,

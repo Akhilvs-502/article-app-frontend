@@ -4,8 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { userRegister } from '@/services/authService';
 import { verifyOtpService } from '@/services/verifyOtpService';
-import { toast } from 'react-toastify';
-import { toastError, toastLite } from '@/utils/toast';
+import { toastLite } from '@/utils/toast';
 import { useRouter } from 'next/navigation';
 
 
@@ -35,7 +34,7 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: '',
     preferences: [] as string[]
-  });
+  }); 
 
   const router=useRouter()
   const [otp, setOtp] = useState(['', '', '', '','','']);
@@ -233,11 +232,14 @@ export default function RegisterPage() {
     } else if (currentStep === 'basic' && validateBasicStep()) {
 
     try{
-      const data=await userRegister(formData)
+      await userRegister(formData)
       setCurrentStep('otp');
       
-    }catch(error: any){
-        toastLite(error.response.data.message)
+    }catch(error: unknown){
+        if (error && typeof error === 'object' && 'response' in error) {
+          const axiosError = error as { response: { data: { message: string } } };
+          toastLite(axiosError.response.data.message);
+        }
       
     }
 
@@ -247,7 +249,7 @@ export default function RegisterPage() {
    
       try{
 
-        const verifyOtp=await verifyOtpService({email:formData.email,otp})
+        await verifyOtpService({email:formData.email,otp})
 
       
         toastLite("otp verified success")
@@ -256,11 +258,11 @@ export default function RegisterPage() {
         toastLite('Registration successful! Welcome to Article Hub!');
         router.push("/auth/login")
 
-      }catch(error: any){
-      
-      
-        console.log("erro3",error.response.data.message);
-        toastLite(error.response.data.message)
+      }catch(error: unknown){
+        if (error && typeof error === 'object' && 'response' in error) {
+          const axiosError = error as { response: { data: { message: string } } };
+          console.log("erro3", axiosError.response.data.message);
+        }
 
         
       }
@@ -589,7 +591,7 @@ export default function RegisterPage() {
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Verify Your Phone</h2>
         <p className="text-gray-600">
-          We've sent a 4-digit verification code to{' '}
+          We&apos;ve sent a 4-digit verification code to{' '}
           <span className="font-semibold text-gray-900">{formData.email}</span>
         </p>
       </div>
@@ -625,7 +627,7 @@ export default function RegisterPage() {
 
         <div className="text-center">
           <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-            Didn't receive the code? Resend
+            Didn&apos;t receive the code? Resend
           </button>
         </div>
       </div>
@@ -659,7 +661,7 @@ export default function RegisterPage() {
         </div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose Your Interests</h2>
         <p className="text-gray-600 max-w-md mx-auto">
-          Select the topics you're passionate about. We'll personalize your experience and show you the most relevant articles.
+          Select the topics you&apos;re passionate about. We&apos;ll personalize your experience and show you the most relevant articles.
         </p>
       </div>
 

@@ -64,8 +64,10 @@ export default function LoginPage() {
       } catch (error) {
         console.log(error,"error while login page");
 
-        
-        toastError(error.response.data.message)
+        if (error && typeof error === 'object' && 'response' in error) {
+          const axiosError = error as { response: { data: { message: string } } };
+          toastError(axiosError.response.data.message);
+        }
       }
 
       console.log('Login attempt:', { ...formData, identifierType });
@@ -160,7 +162,7 @@ export default function LoginPage() {
 
         <div className="mt-6 text-center">
           <p className="text-gray-600">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <Link href="/auth/register" className="text-blue-600 hover:text-blue-700 font-medium">
               Sign up here
             </Link>

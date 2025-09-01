@@ -7,7 +7,7 @@ export const getUserProfile=async()=>{
     try{
         console.log("get profile");
         
-        const url='/api/user/profile'
+    
         const response= await axios.get(API_ROUTES.USER.PROFILE,{withCredentials:true}) 
         return response
     }
@@ -33,7 +33,7 @@ export const userResetPassword = async (body: object) => {
 
 export const userProfileDataUpdate=async(update:object)=>{
     try{
-        const url="/api/user/profile"
+    
         const response= await axios.patch(API_ROUTES.USER.PROFILE,update,{withCredentials:true}) 
         return response 
     }

@@ -79,12 +79,15 @@ export default function PasswordSettings() {
     }
     try{
 
-    }catch(error){
-      console.log(error.data);
+    }catch(error: unknown){
+      console.log(error);
       setIsLoading(true);
       setMessage(null);
       
-      toastError(error.response.data.message)
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response: { data: { message: string } } };
+        toastError(axiosError.response.data.message);
+      }
 
     }
 
@@ -103,8 +106,13 @@ export default function PasswordSettings() {
       
       setMessage({ type: 'success', text: 'Password changed successfully!' });
       
-    } catch (error) {
-      setMessage({ type: 'error', text: error.response.data.message });
+    } catch (error: unknown) {
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response: { data: { message: string } } };
+        setMessage({ type: 'error', text: axiosError.response.data.message });
+      } else {
+        setMessage({ type: 'error', text: 'An error occurred while changing password' });
+      }
     } finally {
       setIsLoading(false);
     }
