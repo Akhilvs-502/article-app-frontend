@@ -1,104 +1,64 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ArticleManagement from '@/components/dashboard/ArticleManagement';
+import { mockArticles as baseArticles } from '@/data/mockArticles';
+import { getUserArticleService, editArticleService } from '@/services/dashboard';
+import { useArticles, DashboardArticle } from '@/context/ArticlesContext';
+import EditArticleForm, { EditArticleData } from '@/components/EditArticleForm';
+import { toastError } from '@/utils/toast';
 
-// Mock data - in a real app this would come from your backend
-const mockUser = {
-  name: 'John Doe',
-  email: 'john@example.com',
-  preferences: ['Sports', 'Technology', 'Science']
-};
 
-const mockArticles = [
-  {
-    id: 1,
-    title: 'Latest Developments in Space Exploration',
-    category: 'Space',
-    author: 'John Doe',
-    date: '2024-01-15',
-    isOwner: true,
-    content: 'Space exploration has seen remarkable advancements in recent years. From private companies launching missions to Mars to new discoveries about exoplanets, the field is expanding rapidly. NASA\'s Artemis program aims to return humans to the Moon, while SpaceX continues to push boundaries with reusable rockets.',
-    likes: 45,
-    dislikes: 3,
-    isLiked: false,
-    isDisliked: false,
-    isBlocked: false,
-    status: 'published' as const
-  },
-  {
-    id: 2,
-    title: 'The Future of Renewable Energy',
-    category: 'Science',
-    author: 'Jane Smith',
-    date: '2024-01-14',
-    isOwner: false,
-    content: 'Renewable energy sources are becoming increasingly cost-effective and efficient. Solar panels have seen dramatic improvements in efficiency, while wind energy continues to grow. Battery storage technology is advancing rapidly, making renewable energy more reliable than ever before.',
-    likes: 128,
-    dislikes: 12,
-    isLiked: true,
-    isDisliked: false,
-    isBlocked: false,
-    status: 'published' as const
-  },
-  {
-    id: 3,
-    title: 'AI in Modern Healthcare',
-    category: 'Technology',
-    author: 'John Doe',
-    date: '2024-01-13',
-    isOwner: true,
-    content: 'Artificial Intelligence is revolutionizing healthcare in unprecedented ways. From diagnostic tools that can detect diseases earlier than human doctors to robotic surgery systems that improve precision, AI is enhancing patient outcomes and reducing medical errors.',
-    likes: 89,
-    dislikes: 7,
-    isLiked: false,
-    isDisliked: false,
-    isBlocked: false,
-    status: 'published' as const
-  },
-  {
-    id: 4,
-    title: 'The Evolution of Football Tactics',
-    category: 'Sports',
-    author: 'Mike Johnson',
-    date: '2024-01-12',
-    isOwner: false,
-    content: 'Modern football has evolved significantly from traditional formations. Teams now use data analytics to optimize player positioning, pressing strategies, and possession-based play. The role of full-backs has transformed, and pressing systems have become more sophisticated.',
-    likes: 67,
-    dislikes: 15,
-    isLiked: false,
-    isDisliked: false,
-    isBlocked: false,
-    status: 'published' as const
-  },
-  {
-    id: 6,
-    title: 'New Article in Progress',
-    category: 'Technology',
-    author: 'John Doe',
-    date: '2024-01-10',
-    isOwner: true,
-    content: 'This is a draft article that I\'m working on. It will cover the latest trends in web development and modern frameworks.',
-    likes: 0,
-    dislikes: 0,
-    isLiked: false,
-    isDisliked: false,
-    isBlocked: false,
-    status: 'published' as const
-  }
-];
+
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'articles' | 'preferences'>('articles');
-  const [selectedArticle, setSelectedArticle] = useState<typeof mockArticles[0] | null>(null);
-  const [articles, setArticles] = useState(mockArticles);
 
-  const handleLike = (articleId: number) => {
-    setArticles(prev => prev.map(article => {
-      if (article.id === articleId) {
+  const router = useRouter();
+
+  const [selectedArticle, setSelectedArticle] = useState<DashboardArticle | null>(null);
+  const [editingArticle, setEditingArticle] = useState<DashboardArticle | null>(null);
+  const { articles, setArticles } = useArticles();
+
+
+  useEffect(()=>{
+    try{
+      const getData = async () => {
+        const response = await getUserArticleService();
+        const apiData = (response as any)?.data?.data ?? [];
+        const normalized: DashboardArticle[] = apiData.map((item: any) => ({
+          id: (item?.id ?? item?._id) as string | number,
+          title: item?.title ?? '',
+          category: item?.category ?? 'General',
+          author: item?.author ?? 'Unknown',
+          date: item?.date ?? new Date().toISOString(),
+          image: item?.image ?? 'https://via.placeholder.com/800x400',
+          isOwner: Boolean(item?.isOwner ?? true),
+          content: item?.content ?? '',
+          description: item?.description ?? (item?.content ? String(item?.content).slice(0, 180) : ''),
+          likes: Number(item?.likes ?? 0),
+          dislikes: Number(item?.dislikes ?? 0),
+          isLiked: Boolean(item?.isLiked ?? false),
+          isDisliked: Boolean(item?.isDisliked ?? false),
+          isBlocked: Boolean(item?.isBlocked ?? false)
+        }));
+        setArticles(normalized);
+      };
+      getData().catch((error) => {
+        console.error("Failed to fetch articles:", error);
+        
+      });
+    }
+    catch(error){
+      console.error("Error in useEffect:", error);
+      
+    }
+  }, [setArticles])
+
+  const handleLike = (articleId: string | number) => {
+    setArticles((prev: DashboardArticle[]) => prev.map((article: DashboardArticle) => {
+        if (String(article.id) === String(articleId)) {
         if (article.isLiked) {
           return { ...article, isLiked: false, likes: article.likes - 1 };
         } else {
@@ -115,9 +75,9 @@ export default function DashboardPage() {
     }));
   };
 
-  const handleDislike = (articleId: number) => {
-    setArticles(prev => prev.map(article => {
-      if (article.id === articleId) {
+  const handleDislike = (articleId: string | number) => {
+    setArticles((prev: DashboardArticle[]) => prev.map((article: DashboardArticle) => {
+      if (String(article.id) === String(articleId)) {
         if (article.isDisliked) {
           return { ...article, isDisliked: false, dislikes: article.dislikes - 1 };
         } else {
@@ -134,34 +94,98 @@ export default function DashboardPage() {
     }));
   };
 
-  const handleBlock = (articleId: number) => {
-    setArticles(prev => prev.map(article => {
-      if (article.id === articleId) {
+  const handleBlock = (articleId: string | number) => {
+    setArticles((prev: DashboardArticle[]) => prev.map((article: DashboardArticle) => {
+      if (String(article.id) === String(articleId)) {
         return { ...article, isBlocked: !article.isBlocked };
       }
       return article;
     }));
   };
 
-  const handleEdit = (articleId: number) => {
-    router.push(`/dashboard/edit-article/${articleId}`);
+  const handleEdit = (articleId: string | number) => {
+    const target = articles.find(a => String(a.id) === String(articleId)) || null;
+    setEditingArticle(target);
   };
 
-  const handleDelete = (articleId: number) => {
-    if (confirm('Are you sure you want to delete this article? This action cannot be undone.')) {
-      setArticles(prev => prev.filter(article => article.id !== articleId));
-    }
-  };
+  
 
-  const openArticle = (article: typeof mockArticles[0]) => {
+  const openArticle = (article: DashboardArticle) => {
     setSelectedArticle(article);
   };
 
   const closeArticle = () => {
     setSelectedArticle(null);
   };
+  const handleEditCancel = () => setEditingArticle(null);
 
-  const filteredArticles = articles.filter(article => !article.isBlocked);
+  const handleEditSubmit = async (data: EditArticleData) => {
+    if (!editingArticle) return;
+    
+    try {
+      // Call the edit article service with all the updated form data
+      const response = await editArticleService(editingArticle.id, {
+        title: data.title,
+        content: data.content,
+        category: data.category,
+        description: data.description,
+        image: data.image
+      });
+
+      // Update the local state with the edited article
+      const updated: DashboardArticle = {
+        ...editingArticle,
+        title: data.title,
+        content: data.content,
+        category: data.category,
+        image: data.image,
+      };
+      
+      setArticles((prev: DashboardArticle[]) => prev.map((a) => String(a.id) === String(editingArticle.id) ? updated : a));
+      setEditingArticle(null);
+      
+      // You can add a success message here if needed
+      console.log('Article updated successfully:', response);
+      
+    } catch (error) {
+      console.error('Failed to update article:', error);
+      // You can add error handling here if needed
+    }
+  };
+
+
+  const handleDelete = async(articleId: string | number) => {
+    console.log(articleId);
+    
+    if (confirm('Are you sure you want to delete this article? This action cannot be undone.')) {
+1
+    try {
+
+
+      const response = await editArticleService(articleId, {isBlocked:true});
+      const updated: DashboardArticle = {
+        ...editingArticle!,
+        isBlocked:true
+      };
+      // setArticles((prev: DashboardArticle[]) => prev.map((a) => String(a.id) === String(editingArticle.id) ? updated : a));
+      setEditingArticle(null);
+      setArticles((prev: DashboardArticle[]) => prev.filter((article: DashboardArticle) => String(article.id) !== String(articleId)));
+      
+
+      
+    } catch (error) {
+      console.log(error);
+      toastError("error")
+      
+    
+    }
+
+    }
+  };
+
+  // inline edit removed; handled by dedicated page component
+
+  const filteredArticles = articles.filter((article: DashboardArticle) => !article.isBlocked);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -170,87 +194,24 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Dashboard Content */}
         <div className="bg-white rounded-lg shadow">
-          {/* Tab Navigation */}
+          {/* Page Header */}
           <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8 px-6">
-              <button
-                onClick={() => setActiveTab('articles')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'articles'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                My Articles
-              </button>
-              <button
-                onClick={() => setActiveTab('preferences')}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'preferences'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Preferences
-              </button>
-            </nav>
+            <div className="px-6 py-4">
+              <h1 className="text-2xl font-bold text-gray-900">My Articles</h1>
+              <p className="text-gray-600 mt-1">Manage and view your published articles</p>
+            </div>
           </div>
 
-          {/* Tab Content */}
+                    {/* Content */}
           <div className="p-6">
-            {activeTab === 'articles' && (
-              <ArticleManagement
-                articles={articles}
-                onLike={handleLike}
-                onDislike={handleDislike}
-                onBlock={handleBlock}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-              />
-            )}
-
-            {activeTab === 'preferences' && (
-              <div>
-                <h2 className="text-lg font-medium text-gray-900 mb-6">Article Preferences</h2>
-                <p className="text-gray-600 mb-6">These are the categories you're interested in. Articles from these topics will appear in your feed.</p>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {['Sports', 'Politics', 'Space', 'Technology', 'Health', 'Science', 'Entertainment', 'Business', 'Education', 'Environment'].map((category) => (
-                    <label key={category} className="relative cursor-pointer group">
-                      <input
-                        type="checkbox"
-                        checked={mockUser.preferences.includes(category)}
-                        className="sr-only"
-                      />
-                      <div className={`p-4 rounded-lg border-2 transition-all duration-200 ${
-                        mockUser.preferences.includes(category)
-                          ? 'border-blue-500 bg-blue-50 text-blue-900'
-                          : 'border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50'
-                      }`}>
-                        <div className="text-center">
-                          <div className={`w-6 h-6 rounded-full border-2 mx-auto mb-2 transition-all duration-200 ${
-                            mockUser.preferences.includes(category)
-                              ? 'border-blue-500 bg-blue-500'
-                              : 'border-gray-300'
-                          }`}>
-                            {mockUser.preferences.includes(category) && (
-                              <svg className="w-4 h-4 text-white mx-auto mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                            )}
-                          </div>
-                          <span className="font-medium text-sm">{category}</span>
-                        </div>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-                <div className="mt-8">
-                  <button className="bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors font-medium">
-                    Save Preferences
-                  </button>
-                </div>
-              </div>
-            )}
+            <ArticleManagement
+              articles={articles}
+              onLike={handleLike}
+              onDislike={handleDislike}
+              onBlock={handleBlock}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
           </div>
         </div>
       </div>
@@ -333,6 +294,23 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {editingArticle && (
+        <EditArticleForm
+          variant="modal"
+          heading="Edit Article"
+          initialData={{
+            title: editingArticle.title,
+            description: editingArticle.description,
+            content: editingArticle.content,
+            category: editingArticle.category,
+            image: editingArticle.image
+          }}
+          onSubmit={handleEditSubmit}
+          onCancel={handleEditCancel}
+        />
+      )}
+
     </div>
   );
 } 
