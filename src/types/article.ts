@@ -1,5 +1,6 @@
 export interface Article {
   id: number;
+  _id?: string; // MongoDB-style ID from API
   title: string;
   category: string;
   author: string;
@@ -19,7 +20,6 @@ export interface CreateArticleData {
   category: string;
   tags: string[];
   image: File | null;
-  isPublished: boolean;
 }
 
 export interface ArticleFormErrors {

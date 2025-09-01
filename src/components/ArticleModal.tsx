@@ -7,9 +7,9 @@ interface ArticleModalProps {
   article: Article | null;
   isOpen: boolean;
   onClose: () => void;
-  onLike: (id: number) => void;
-  onDislike: (id: number) => void;
-  onBlock: (id: number) => void;
+  onLike: (id: number | string) => void;
+  onDislike: (id: number | string) => void;
+  onBlock: (id: number | string) => void;
 }
 
 export default function ArticleModal({ 
@@ -22,7 +22,37 @@ export default function ArticleModal({
 }: ArticleModalProps) {
   const [isBlocked, setIsBlocked] = useState(false);
 
-  if (!isOpen || !article) return null;
+  // Debug logging
+  console.log('ArticleModal props:', { article, isOpen, isBlocked });
+
+  if (!isOpen || !article) {
+    console.log('Modal not showing:', { isOpen, hasArticle: !!article });
+    return null;
+  }
+
+  // Validate article data
+  if (!article.title || !article.content) {
+    console.error('Invalid article data:', article);
+    return (
+      <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+          <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div className="bg-white px-6 py-4">
+              <h3 className="text-lg font-medium text-red-600">Error Loading Article</h3>
+              <p className="mt-2 text-sm text-gray-500">The article data is incomplete or corrupted.</p>
+              <button
+                onClick={onClose}
+                className="mt-4 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -35,7 +65,7 @@ export default function ArticleModal({
 
   const handleBlock = () => {
     setIsBlocked(true);
-    onBlock(article.id);
+    onBlock(article._id || article.id);
     // Close modal after blocking
     setTimeout(() => {
       onClose();
@@ -107,7 +137,7 @@ export default function ArticleModal({
               <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0 sm:space-x-4 pt-6 border-t border-gray-200">
                 <div className="flex items-center space-x-3">
                   <button
-                    onClick={() => onLike(article.id)}
+                    onClick={() => onLike(article._id || article.id)}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
                       article.isLiked 
                         ? 'bg-blue-100 text-blue-700 ring-2 ring-blue-200' 
@@ -121,7 +151,7 @@ export default function ArticleModal({
                   </button>
                   
                   <button
-                    onClick={() => onDislike(article.id)}
+                    onClick={() => onDislike(article._id || article.id)}
                     className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
                       article.isDisliked 
                         ? 'bg-red-100 text-red-700 ring-2 ring-red-200' 

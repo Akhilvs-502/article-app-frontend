@@ -25,7 +25,7 @@ const articleCategories = [
 type SignupStep = 'basic' | 'otp' | 'preferences';
 
 export default function RegisterPage() {
-  const [currentStep, setCurrentStep] = useState<SignupStep>('basic');
+  const [currentStep, setCurrentStep] = useState<SignupStep>('preferences');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -40,12 +40,40 @@ export default function RegisterPage() {
   const router=useRouter()
   const [otp, setOtp] = useState(['', '', '', '','','']);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showPasswords, setShowPasswords] = useState({
+    password: false,
+    confirmPassword: false
+  });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+    
+    // Real-time validation for specific fields
+    if (name === 'email' && value.trim()) {
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())) {
+        setErrors(prev => ({ ...prev, email: 'Please enter a valid email address' }));
+      }
+    }
+    
+    if (name === 'phone' && value.trim()) {
+      const cleanPhone = value.replace(/[\s\-\(\)]/g, '');
+      if (!/^[\+]?[1-9][\d]{0,15}$/.test(cleanPhone) || cleanPhone.length < 10) {
+        setErrors(prev => ({ ...prev, phone: 'Please enter a valid phone number' }));
+      }
+    }
+    
+    if ((name === 'firstName' || name === 'lastName') && value.trim()) {
+      if (value.trim().length < 2) {
+        setErrors(prev => ({ ...prev, [name]: `${name === 'firstName' ? 'First' : 'Last'} name must be at least 2 characters long` }));
+      } else if (!/^[a-zA-Z\s'-]+$/.test(value.trim())) {
+        setErrors(prev => ({ ...prev, [name]: `${name === 'firstName' ? 'First' : 'Last'} name can only contain letters, spaces, hyphens, and apostrophes` }));
+      }
     }
   };
 
@@ -71,17 +99,110 @@ export default function RegisterPage() {
     }));
   };
 
+  const togglePasswordVisibility = (field: 'password' | 'confirmPassword') => {
+    setShowPasswords(prev => ({
+      ...prev,
+      [field]: !prev[field]
+    }));
+  };
+
+  const getPasswordStrength = (password: string): { score: number; label: string; color: string } => {
+    if (!password) return { score: 0, label: '', color: '' };
+    
+    let score = 0;
+    if (password.length >= 8) score++;
+    if (/(?=.*[a-z])/.test(password)) score++;
+    if (/(?=.*[A-Z])/.test(password)) score++;
+    if (/(?=.*\d)/.test(password)) score++;
+    if (/(?=.*[!@#$%^&*])/.test(password)) score++;
+
+    const strengthMap = [
+      { label: 'Very Weak', color: 'bg-red-500' },
+      { label: 'Weak', color: 'bg-orange-500' },
+      { label: 'Fair', color: 'bg-yellow-500' },
+      { label: 'Good', color: 'bg-blue-500' },
+      { label: 'Strong', color: 'bg-green-500' }
+    ];
+
+    return { score, ...strengthMap[Math.min(score - 1, 4)] };
+  };
+
   const validateBasicStep = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
-    if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
-    if (!formData.phone.trim()) newErrors.phone = 'Phone number is required';
-    if (!formData.email.trim()) newErrors.email = 'Email is required';
-    if (!formData.dob) newErrors.dob = 'Date of birth is required';
-    if (!formData.password) newErrors.password = 'Password is required';
-    if (formData.password.length < 6) newErrors.password = 'Password must be at least 6 characters';
-    if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
+    // First Name Validation
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    } else if (formData.firstName.trim().length < 2) {
+      newErrors.firstName = 'First name must be at least 2 characters long';
+    } else if (!/^[a-zA-Z\s'-]+$/.test(formData.firstName.trim())) {
+      newErrors.firstName = 'First name can only contain letters, spaces, hyphens, and apostrophes';
+    }
+
+    // Last Name Validation
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
+    } else if (formData.lastName.trim().length < 2) {
+      newErrors.lastName = 'Last name must be at least 2 characters long';
+    } else if (!/^[a-zA-Z\s'-]+$/.test(formData.lastName.trim())) {
+      newErrors.lastName = 'Last name can only contain letters, spaces, hyphens, and apostrophes';
+    }
+
+    // Phone Number Validation
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    } else if (!/^[\+]?[1-9][\d]{0,15}$/.test(formData.phone.replace(/[\s\-\(\)]/g, ''))) {
+      newErrors.phone = 'Please enter a valid phone number';
+    } else if (formData.phone.replace(/[\s\-\(\)]/g, '').length < 10) {
+      newErrors.phone = 'Phone number must be at least 10 digits long';
+    }
+
+    // Email Validation
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email address is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      newErrors.email = 'Please enter a valid email address';
+    } else if (formData.email.trim().length > 254) {
+      newErrors.email = 'Email address is too long';
+    }
+
+    // Date of Birth Validation
+    if (!formData.dob) {
+      newErrors.dob = 'Date of birth is required';
+    } else {
+      const dob = new Date(formData.dob);
+      const today = new Date();
+      let age = today.getFullYear() - dob.getFullYear();
+      const monthDiff = today.getMonth() - dob.getMonth();
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+        age--;
+      }
+      
+      if (age < 13) {
+        newErrors.dob = 'You must be at least 13 years old to register';
+      } else if (age > 120) {
+        newErrors.dob = 'Please enter a valid date of birth';
+      } else if (dob > today) {
+        newErrors.dob = 'Date of birth cannot be in the future';
+      }
+    }
+
+    // Password Validation
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters long';
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+      newErrors.password = 'Password must contain at least one uppercase letter, one lowercase letter, and one number';
+    }
+    
+    // Confirm Password Validation
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -107,13 +228,15 @@ export default function RegisterPage() {
   };
 
   const handleNextStep =async () => {
-    if (currentStep === 'basic' && validateBasicStep()) {
+    if (currentStep === 'preferences' && validatePreferencesStep()) {
+      setCurrentStep('basic');
+    } else if (currentStep === 'basic' && validateBasicStep()) {
 
     try{
       const data=await userRegister(formData)
       setCurrentStep('otp');
       
-    }catch(error){
+    }catch(error: any){
         toastLite(error.response.data.message)
       
     }
@@ -129,9 +252,11 @@ export default function RegisterPage() {
       
         toastLite("otp verified success")
         
-        setCurrentStep('preferences');
+        // Registration complete - redirect to login
+        toastLite('Registration successful! Welcome to Article Hub!');
+        router.push("/auth/login")
 
-      }catch(error){
+      }catch(error: any){
       
       
         console.log("erro3",error.response.data.message);
@@ -144,20 +269,16 @@ export default function RegisterPage() {
   };
 
   const handlePreviousStep = () => {
-    if (currentStep === 'otp') {
+    if (currentStep === 'basic') {
+      setCurrentStep('preferences');
+    } else if (currentStep === 'otp') {
       setCurrentStep('basic');
-    } else if (currentStep === 'preferences') {
-      setCurrentStep('otp');
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (validatePreferencesStep()) {
-      console.log('Final form submitted:', formData);
-      toastLite('Registration successful! Welcome to Article Hub!');
-      router.push("/auth/login")
-    }
+    // This is now handled in handleNextStep for OTP verification
   };
 
   const renderBasicStep = () => (
@@ -187,7 +308,7 @@ export default function RegisterPage() {
                   ? 'border-red-300 focus:border-red-500' 
                   : 'border-gray-200 focus:border-blue-500'
               }`}
-              placeholder="Enter your first name"
+              placeholder="e.g., John"
             />
             {errors.firstName && (
               <p className="text-red-600 text-sm mt-2 flex items-center">
@@ -214,7 +335,7 @@ export default function RegisterPage() {
                   ? 'border-red-300 focus:border-red-500' 
                   : 'border-gray-200 focus:border-blue-500'
               }`}
-              placeholder="Enter your last name"
+              placeholder="e.g., Smith"
             />
             {errors.lastName && (
               <p className="text-red-600 text-sm mt-2 flex items-center">
@@ -244,7 +365,7 @@ export default function RegisterPage() {
                   ? 'border-red-300 focus:border-red-500' 
                   : 'border-gray-200 focus:border-blue-500'
               }`}
-              placeholder="Enter your phone number"
+              placeholder="e.g., +1 (555) 123-4567"
             />
             {errors.phone && (
               <p className="text-red-600 text-sm mt-2 flex items-center">
@@ -271,7 +392,7 @@ export default function RegisterPage() {
                   ? 'border-red-300 focus:border-red-500' 
                   : 'border-gray-200 focus:border-blue-500'
               }`}
-              placeholder="Enter your email address"
+              placeholder="e.g., john@example.com"
             />
             {errors.email && (
               <p className="text-red-600 text-sm mt-2 flex items-center">
@@ -295,12 +416,16 @@ export default function RegisterPage() {
             name="dob"
             value={formData.dob}
             onChange={handleInputChange}
+            max={new Date().toISOString().split('T')[0]} // Prevent future dates
             className={`w-full px-4 py-3 border-2 rounded-lg text-gray-900 transition-all duration-200 focus:outline-none focus:ring-0 ${
               errors.dob 
                 ? 'border-red-300 focus:border-red-500' 
                 : 'border-gray-200 focus:border-blue-500'
             }`}
           />
+          <p className="text-xs text-gray-500 mt-1">
+            You must be at least 13 years old to register
+          </p>
           {errors.dob && (
             <p className="text-red-600 text-sm mt-2 flex items-center">
               <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -311,25 +436,82 @@ export default function RegisterPage() {
           )}
         </div>
 
+        {/* Security Tips */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 className="text-sm font-medium text-blue-900 mb-2">Password Security Tips</h4>
+          <ul className="text-sm text-blue-800 space-y-1">
+            <li>• Use at least 8 characters</li>
+            <li>• Include uppercase and lowercase letters</li>
+            <li>• Add numbers and special characters</li>
+            <li>• Avoid common words and personal information</li>
+          </ul>
+        </div>
+
         {/* Password Fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
               Password
             </label>
+            <div className="relative">
             <input
-              type="password"
+                type={showPasswords.password ? 'text' : 'password'}
               id="password"
               name="password"
               value={formData.password}
               onChange={handleInputChange}
-              className={`w-full px-4 py-3 border-2 rounded-lg text-gray-900 placeholder-gray-500 transition-all duration-200 focus:outline-none focus:ring-0 ${
+                className={`w-full px-4 py-3 pr-12 border-2 rounded-lg text-gray-900 placeholder-gray-500 transition-all duration-200 focus:outline-none focus:ring-0 ${
                 errors.password 
                   ? 'border-red-300 focus:border-red-500' 
                   : 'border-gray-200 focus:border-blue-500'
               }`}
               placeholder="Create a password"
             />
+              <button
+                type="button"
+                onClick={() => togglePasswordVisibility('password')}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+              >
+                {showPasswords.password ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+            
+            {/* Password Strength Indicator */}
+            {formData.password && (
+              <div className="mt-2">
+                <div className="flex items-center space-x-2 mb-1">
+                  <div className="flex space-x-1">
+                    {[1, 2, 3, 4, 5].map((level) => (
+                      <div
+                        key={level}
+                        className={`w-2 h-2 rounded-full ${
+                          level <= getPasswordStrength(formData.password).score 
+                            ? getPasswordStrength(formData.password).color 
+                            : 'bg-gray-200'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className={`text-sm font-medium ${
+                    getPasswordStrength(formData.password).score >= 4 ? 'text-green-600' : 
+                    getPasswordStrength(formData.password).score >= 3 ? 'text-blue-600' : 
+                    getPasswordStrength(formData.password).score >= 2 ? 'text-yellow-600' : 'text-red-600'
+                  }`}>
+                    {getPasswordStrength(formData.password).label}
+                  </span>
+                </div>
+              </div>
+            )}
+            
             {errors.password && (
               <p className="text-red-600 text-sm mt-2 flex items-center">
                 <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -344,19 +526,37 @@ export default function RegisterPage() {
             <label htmlFor="confirmPassword" className="block text-sm font-semibold text-gray-700 mb-2">
               Confirm Password
             </label>
+            <div className="relative">
             <input
-              type="password"
+                type={showPasswords.confirmPassword ? 'text' : 'password'}
               id="confirmPassword"
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleInputChange}
-              className={`w-full px-4 py-3 border-2 rounded-lg text-gray-900 placeholder-gray-500 transition-all duration-200 focus:outline-none focus:ring-0 ${
+                className={`w-full px-4 py-3 pr-12 border-2 rounded-lg text-gray-900 placeholder-gray-500 transition-all duration-200 focus:outline-none focus:ring-0 ${
                 errors.confirmPassword 
                   ? 'border-red-300 focus:border-red-500' 
                   : 'border-gray-200 focus:border-blue-500'
               }`}
               placeholder="Confirm your password"
             />
+              <button
+                type="button"
+                onClick={() => togglePasswordVisibility('confirmPassword')}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+              >
+                {showPasswords.confirmPassword ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                )}
+              </button>
+            </div>
             {errors.confirmPassword && (
               <p className="text-red-600 text-sm mt-2 flex items-center">
                 <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -443,7 +643,7 @@ export default function RegisterPage() {
           onClick={handleNextStep}
           className="flex-1 bg-gray-900 text-white py-4 px-6 rounded-lg hover:bg-gray-800 transition-all duration-200 font-semibold shadow-sm hover:shadow-md"
         >
-          Verify & Continue
+          Complete Registration
         </button>
       </div>
     </div>
@@ -515,10 +715,11 @@ export default function RegisterPage() {
           Back
         </button>
         <button
-          type="submit"
+          type="button"
+          onClick={handleNextStep}
           className="flex-1 bg-gray-900 text-white py-4 px-6 rounded-lg hover:bg-gray-800 transition-all duration-200 font-semibold shadow-sm hover:shadow-md"
         >
-          Complete Registration
+          Continue to Personal Info
         </button>
       </div>
     </div>
@@ -527,13 +728,13 @@ export default function RegisterPage() {
   const renderProgressBar = () => (
     <div className="mb-12">
       <div className="flex items-center justify-center space-x-4">
-        {['basic', 'otp', 'preferences'].map((step, index) => (
+        {['preferences', 'basic', 'otp'].map((step, index) => (
           <div key={step} className="flex items-center">
             <div
               className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-300 ${
                 currentStep === step
                   ? 'bg-gray-900 text-white scale-110'
-                  : index < ['basic', 'otp', 'preferences'].indexOf(currentStep)
+                  : index < ['preferences', 'basic', 'otp'].indexOf(currentStep)
                   ? 'bg-green-500 text-white'
                   : 'bg-gray-200 text-gray-500'
               }`}
@@ -543,7 +744,7 @@ export default function RegisterPage() {
             {index < 2 && (
               <div
                 className={`w-20 h-1 mx-4 transition-all duration-300 ${
-                  index < ['basic', 'otp', 'preferences'].indexOf(currentStep)
+                  index < ['preferences', 'basic', 'otp'].indexOf(currentStep)
                     ? 'bg-green-500'
                     : 'bg-gray-200'
                 }`}
@@ -554,9 +755,9 @@ export default function RegisterPage() {
       </div>
       <div className="text-center mt-4">
         <span className="text-sm font-medium text-gray-500">
+          {currentStep === 'preferences' && 'Topic Selection'}
           {currentStep === 'basic' && 'Personal Information'}
           {currentStep === 'otp' && 'Phone Verification'}
-          {currentStep === 'preferences' && 'Topic Selection'}
         </span>
       </div>
     </div>
@@ -569,12 +770,12 @@ export default function RegisterPage() {
           {renderProgressBar()}
 
           <form onSubmit={handleSubmit}>
+            {currentStep === 'preferences' && renderPreferencesStep()}
             {currentStep === 'basic' && renderBasicStep()}
             {currentStep === 'otp' && renderOtpStep()}
-            {currentStep === 'preferences' && renderPreferencesStep()}
           </form>
 
-          {currentStep === 'basic' && (
+          {currentStep === 'preferences' && (
             <div className="mt-8 text-center">
               <p className="text-gray-600">
                 Already have an account?{' '}

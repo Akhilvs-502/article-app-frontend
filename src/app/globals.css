@@ -36,14 +36,15 @@ input::placeholder, textarea::placeholder {
 }
 
 @media (prefers-color-scheme: dark) {
+  /* Keep inputs light in dark mode for higher readability */
   input, textarea, select {
-    background-color: #111827; /* gray-900 */
-    color: #e5e7eb; /* gray-200 */
-    border-color: #374151; /* gray-700 */
+    background-color: #ffffff;
+    color: #111827; /* gray-900 */
+    border-color: #d1d5db; /* gray-300 */
   }
 
   input::placeholder, textarea::placeholder {
-    color: #6b7280; /* gray-500 */
+    color: #9ca3af; /* gray-400 */
   }
 }
 

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import Link from 'next/link';
+import { useState, useMemo, useEffect } from 'react';
 import ArticleCard from '@/components/ArticleCard';
 import ArticleModal from '@/components/ArticleModal';
 import { Article } from '@/types/article';
 import { mockArticles } from '@/data/mockArticles';
+import { getUserFeedsService, articleActionService } from '@/services/dashboard';
 
 const categories = ['All', 'Technology', 'Science', 'Health', 'Sports', 'Space', 'Environment'];
 
@@ -13,7 +13,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [sortBy, setSortBy] = useState<'date' | 'likes' | 'title'>('date');
-  const [articles, setArticles] = useState(mockArticles);
+  const [articles, setArticles] = useState<Article[]>([]);
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -40,30 +40,81 @@ export default function HomePage() {
     return filtered;
   }, [articles, searchQuery, selectedCategory, sortBy]);
 
-  const handleLike = (articleId: number) => {
-    setArticles(prev => prev.map(article => {
-      if (article.id === articleId) {
-        if (article.isLiked) {
-          return { ...article, isLiked: false, likes: article.likes - 1 };
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        const response = await getUserFeedsService();
+        const apiData = response?.data?.data ?? [];
+        console.log('API Response:', apiData);
+        
+        if (apiData && apiData.length > 0) {
+          // Normalize the API data to match Article interface
+          const normalizedArticles = apiData.map((item: any) => ({
+            id: item._id || item.id,
+            _id: item._id, // Keep the original _id for API calls
+            title: item.title || '',
+            category: item.category || 'General',
+            author: item.author || 'Unknown',
+            date: item.date || item.createdAt || new Date().toISOString(),
+            image: item.image || 'https://via.placeholder.com/800x400',
+            content: item.content || item.description || '',
+            likes: item.likes || 0,
+            dislikes: item.dislikes || 0,
+            isLiked: item.isLiked || false,
+            isDisliked: item.isDisliked || false
+          }));
+          setArticles(normalizedArticles);
         } else {
-          return { ...article, isLiked: true, isDisliked: false, likes: article.likes + 1 };
+          // Fallback to mock data if no API data
+          setArticles(mockArticles);
         }
+      } catch (error) {
+        console.error("Failed to fetch articles:", error);
+        // Fallback to mock data on error
+        setArticles(mockArticles);
       }
-      return article;
-    }));
+    };
+
+    fetchArticles();
+  }, []);
+
+  const handleLike = async (articleId: number | string) => {
+    try {
+      console.log(articleId, "articleId");
+      await articleActionService(articleId, 'like');
+      // Update local state after successful API call
+      setArticles(prev => prev.map(article => {
+        if (article.id === articleId) {
+          if (article.isLiked) {
+            return { ...article, isLiked: false, likes: article.likes - 1 };
+          } else {
+            return { ...article, isLiked: true, isDisliked: false, likes: article.likes + 1 };
+          }
+        }
+        return article;
+      }));
+    } catch (error) {
+      console.error("Failed to like article:", error);
+    }
   };
 
-  const handleDislike = (articleId: number) => {
-    setArticles(prev => prev.map(article => {
-      if (article.id === articleId) {
-        if (article.isDisliked) {
-          return { ...article, isDisliked: false, dislikes: article.dislikes - 1 };
-        } else {
-          return { ...article, isDisliked: true, isLiked: false, dislikes: article.dislikes + 1 };
+  const handleDislike = async (articleId: number | string) => {
+    try {
+      await articleActionService(articleId, 'dislike');
+      // Update local state after successful API call
+      setArticles(prev => prev.map(article => {
+        if (article.id === articleId) {
+          if (article.isDisliked) {
+            return { ...article, isDisliked: false, dislikes: article.dislikes - 1 };
+          } else {
+            return { ...article, isDisliked: true, isLiked: false, dislikes: article.dislikes + 1 };
+          }
         }
-      }
-      return article;
-    }));
+        return article;
+      }));
+    } catch (error) {
+      console.error("Failed to dislike article:", error);
+    }
   };
 
   const handleReadMore = (article: Article) => {
@@ -71,10 +122,16 @@ export default function HomePage() {
     setIsModalOpen(true);
   };
 
-  const handleBlock = (articleId: number) => {
-    setArticles(prev => prev.filter(article => article.id !== articleId));
-    setIsModalOpen(false);
-    setSelectedArticle(null);
+  const handleBlock = async (articleId: number | string) => {
+    try {
+      await articleActionService(articleId, 'block');
+      // Remove blocked article from local state
+      setArticles(prev => prev.filter(article => article.id !== articleId));
+      setIsModalOpen(false);
+      setSelectedArticle(null);
+    } catch (error) {
+      console.error("Failed to block article:", error);
+    }
   };
 
   const closeModal = () => {
@@ -124,7 +181,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {filteredAndSortedArticles.map((article) => (
               <ArticleCard
-                key={article.id}
+                key={article._id}
                 article={article}
                 onLike={handleLike}
                 onDislike={handleDislike}

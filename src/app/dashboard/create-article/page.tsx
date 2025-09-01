@@ -3,6 +3,9 @@
 import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { createArticleService } from '@/services/dashboard';
+import { uploadImage } from '@/services/fileServices';
+import { toastError } from '@/utils/toast';
 
 interface ArticleFormData {
   title: string;
@@ -11,7 +14,6 @@ interface ArticleFormData {
   category: string;
   tags: string[];
   image: string;
-  isPublished: boolean;
 }
 
 const categories = [
@@ -33,7 +35,7 @@ export default function CreateArticlePage() {
     category: '',
     tags: [],
     image: '',
-    isPublished: false
+
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -60,9 +62,18 @@ export default function CreateArticlePage() {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = (event) => {
+      reader.onload = async (event) => {
         const result = event.target?.result as string;
-        setFormData(prev => ({ ...prev, image: result }));
+        try{
+          const response = await uploadImage(file);
+          setFormData(prev => ({ ...prev, image: response.data.data }));
+          
+        }catch(error){
+          setMessage({ type: 'error', text: 'Image upload failed' });
+          toastError("Image upload failed");
+        }
+        
+        
       };
       reader.readAsDataURL(file);
     }
@@ -118,7 +129,7 @@ export default function CreateArticlePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -127,15 +138,16 @@ export default function CreateArticlePage() {
     setMessage(null);
 
     try {
-      // Simulate API call
+
       await new Promise(resolve => setTimeout(resolve, 2000));
+
+      
+    const data=await  createArticleService(formData)
       
       setMessage({ type: 'success', text: 'Article created successfully!' });
-      
-      // Redirect to dashboard after 2 seconds
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 2000);
+
+      router.push('/dashboard');
+
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to create article. Please try again.' });
     } finally {
@@ -143,28 +155,11 @@ export default function CreateArticlePage() {
     }
   };
 
-  const handleSaveDraft = async () => {
-    setIsLoading(true);
-    setMessage(null);
 
-    try {
-      // Simulate API call for draft
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setMessage({ type: 'success', text: 'Draft saved successfully!' });
-      
-      // Clear message after 3 seconds
-      setTimeout(() => setMessage(null), 3000);
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to save draft. Please try again.' });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
-      
+
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Title */}
@@ -177,11 +172,10 @@ export default function CreateArticlePage() {
 
         {/* Message */}
         {message && (
-          <div className={`p-4 rounded-lg mb-6 ${
-            message.type === 'success' 
-              ? 'bg-green-50 text-green-800 border border-green-200' 
+          <div className={`p-4 rounded-lg mb-6 ${message.type === 'success'
+              ? 'bg-green-50 text-green-800 border border-green-200'
               : 'bg-red-50 text-red-800 border border-red-200'
-          }`}>
+            }`}>
             {message.text}
           </div>
         )}
@@ -192,7 +186,7 @@ export default function CreateArticlePage() {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
-              
+
               {/* Title */}
               <div className="mb-4">
                 <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
@@ -258,7 +252,7 @@ export default function CreateArticlePage() {
             {/* Content */}
             <div>
               <h3 className="text-lg font-medium text-gray-900 mb-4">Article Content</h3>
-              
+
               <div className="mb-4">
                 <label htmlFor="content" className="block text-sm font-medium text-gray-700 mb-2">
                   Article Content *
@@ -281,14 +275,14 @@ export default function CreateArticlePage() {
             {/* Media & Tags */}
             <div>
               <h3 className="text-lg font-medium text-gray-900 mb-4">Media & Tags</h3>
-              
+
               {/* Featured Image */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Featured Image *
                 </label>
                 <div className="flex items-center space-x-4">
-                  <div 
+                  <div
                     className="w-32 h-32 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-gray-400 transition-colors"
                     onClick={handleImageClick}
                   >
@@ -347,7 +341,7 @@ export default function CreateArticlePage() {
                     Add
                   </button>
                 </div>
-                
+
                 {/* Display Tags */}
                 {formData.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2">
@@ -376,40 +370,13 @@ export default function CreateArticlePage() {
               </div>
             </div>
 
-            {/* Publishing Options */}
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Publishing Options</h3>
-              
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  id="isPublished"
-                  name="isPublished"
-                  checked={formData.isPublished}
-                  onChange={handleCheckboxChange}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <label htmlFor="isPublished" className="text-sm font-medium text-gray-700">
-                  Publish immediately
-                </label>
-              </div>
-              <p className="text-xs text-gray-500 mt-1 ml-6">
-                If unchecked, the article will be saved as a draft
-              </p>
-            </div>
+
           </div>
 
           {/* Action Buttons */}
           <div className="flex items-center justify-between pt-6 border-t border-gray-200">
-            <button
-              type="button"
-              onClick={handleSaveDraft}
-              disabled={isLoading}
-              className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
-            >
-              Save as Draft
-            </button>
-            
+           
+
             <div className="flex items-center space-x-3">
               <Link
                 href="/dashboard"
@@ -425,14 +392,7 @@ export default function CreateArticlePage() {
                 {isLoading && (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 )}
-                <span>
-                  {isLoading 
-                    ? 'Creating...' 
-                    : formData.isPublished 
-                      ? 'Publish Article' 
-                      : 'Create Article'
-                  }
-                </span>
+                <span>{isLoading ? 'Creating...' : 'Create Article'}</span>
               </button>
             </div>
           </div>

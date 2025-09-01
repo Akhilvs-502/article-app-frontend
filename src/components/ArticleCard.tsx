@@ -6,12 +6,15 @@ import { Article } from '@/types/article';
 
 interface ArticleCardProps {
   article: Article;
-  onLike: (id: number) => void;
-  onDislike: (id: number) => void;
+  onLike: (id: number | string) => void;
+  onDislike: (id: number | string) => void;
   onReadMore: (article: Article) => void;
+  onEdit?: (id: number | string) => void;
+  onDelete?: (id: number | string) => void;
+  showManageActions?: boolean;
 }
 
-export default function ArticleCard({ article, onLike, onDislike, onReadMore }: ArticleCardProps) {
+export default function ArticleCard({ article, onLike, onDislike, onReadMore, onEdit, onDelete, showManageActions = false }: ArticleCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   const formatDate = (dateString: string) => {
@@ -71,7 +74,7 @@ export default function ArticleCard({ article, onLike, onDislike, onReadMore }: 
         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
           <div className="flex items-center space-x-3">
             <button
-              onClick={() => onLike(article.id)}
+              onClick={() => onLike(article._id || article.id)}
               className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 ${
                 article.isLiked 
                   ? 'bg-blue-100 text-blue-700 ring-2 ring-blue-200' 
@@ -85,7 +88,7 @@ export default function ArticleCard({ article, onLike, onDislike, onReadMore }: 
             </button>
             
             <button
-              onClick={() => onDislike(article.id)}
+              onClick={() => onDislike(article._id || article.id)}
               className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 ${
                 article.isDisliked 
                   ? 'bg-red-100 text-red-700 ring-2 ring-red-200' 
@@ -106,18 +109,33 @@ export default function ArticleCard({ article, onLike, onDislike, onReadMore }: 
             >
               {isExpanded ? 'Show Less' : 'Show More'}
             </button>
-            <button
-              onClick={() => onReadMore(article)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-            >
-              Read in Modal
-            </button>
+            
             <Link
-              href={`/article/${article.id}`}
+              href={`/article/${article._id || article.id}`}
               className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm font-medium"
             >
               Full Page
             </Link>
+            {showManageActions && (
+              <>
+                {onEdit && (
+                  <button
+                    onClick={() => onEdit(article._id || article.id)}
+                    className="text-blue-600 hover:text-blue-700 text-sm font-medium px-3 py-2 rounded-lg hover:bg-blue-50"
+                  >
+                    Edit
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    onClick={() => onDelete(article._id || article.id)}
+                    className="text-red-600 hover:text-red-700 text-sm font-medium px-3 py-2 rounded-lg hover:bg-red-50"
+                  >
+                    Delete
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
